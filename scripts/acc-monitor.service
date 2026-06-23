@@ -1,0 +1,13 @@
+[Unit]
+Description=Water provider Water Disconnection Monitor
+After=network.target
+
+[Service]
+Type=oneshot
+User=user
+WorkingDirectory=/home/user/netops-control-plane
+Environment="PATH=/home/user/netops-control-plane/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/user/netops-control-plane/venv/bin/python /home/user/netops-control-plane/scripts/acc_monitor.py
+
+[Install]
+WantedBy=multi-user.target
