@@ -582,51 +582,11 @@ async def check_electric_now(user: UserInfo = Depends(get_current_user)):
     except Exception as e:
         logger.error(f"Electric check error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-# ==============================================================================
-# INVOICE GENERATOR ENDPOINTS
-# ==============================================================================
-@router.post("/invoice/generate")
-async def generate_invoice_endpoint(user: UserInfo = Depends(get_current_user)):
-    """Generate invoices: PayGate (email+FTP) and postal operator (DB query+FTP)."""
-    if user.role != "operator":
-        raise HTTPException(status_code=403, detail="Operator access required")
-    try:
-        results = {}
-        
-        # 1. PayGate invoice (original: SSH script -> email + FTP)
-        from src.monitoring.invoice_generator import generate_invoice as run_paygate_invoice
-        paygate_result = run_paygate_invoice()
-        results["paygate"] = paygate_result
-        
-        # 2. postal operator invoice (DB query -> XLSX -> FTP)
-        from src.monitoring.postal_generator import generate_posta_invoice
-        postal_result = generate_posta_invoice()
-        results["postal"] = postal_result
-        
-        # Combined result
-        success = paygate_result.get("success", False) or postal_result.get("success", False)
-        messages = []
-        if paygate_result.get("message"):
-            messages.append(f"PayGate: {paygate_result['message']}")
-        if postal_result.get("message"):
-            messages.append(f"Postal: {postal_result['message']}")
-        
-        return {
-            "success": success,
-            "message": " | ".join(messages),
-            "paygate": paygate_result,
-            "postal": postal_result,
-        }
-    except Exception as e:
-        logger.error(f"Invoice generation error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 
 
 # ==============================================================================
 # ONU MONITORING ENDPOINTS
 # ==============================================================================
-
 @router.get("/onu/status")
 async def get_onu_status(user: UserInfo = Depends(get_current_user)):
     """Get all ONU status from all OLTs."""
@@ -1458,23 +1418,6 @@ async def refresh_updates(user: UserInfo = Depends(require_admin)):
             for server_id, status in statuses.items()
         }
     }
-
-
-# ==============================================================================
-# EMAIL INVOICE SENDER
-# ==============================================================================
-@router.post("/invoice/send-emails")
-async def send_invoice_emails_endpoint(user: UserInfo = Depends(get_current_user)):
-    """Send invoice emails to clients from invoice_clients_email.txt."""
-    if user.role != "operator":
-        raise HTTPException(status_code=403, detail="Operator access required")
-    try:
-        from src.monitoring.email_invoice_sender import send_email_invoices
-        result = send_email_invoices()
-        return result
-    except Exception as e:
-        logger.error(f"Email invoice sender error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ==============================================================================
