@@ -255,7 +255,7 @@ def set_auto_check(enabled: bool, interval_seconds) -> dict:
 # own listening IP). Set it to a zone the monitored DNS servers are actually
 # authoritative for, otherwise the check will fail on healthy servers.
 
-_DEFAULT_DNS_TEST_ZONE = "example.com"
+_DEFAULT_DNS_TEST_ZONE = os.getenv("DNS_TEST_ZONE", "example.com")
 _DNS_ZONE_RE = re.compile(r'^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}$')
 
 

@@ -1,0 +1,9 @@
+# Addresses monitored for electricity outages (the power provider notices, Springfield)
+# Format: Street HouseNumber  |  one per line
+# Copy to config/electric_addresses.txt (git-ignored) or manage it from the web admin panel.
+
+# PoP example-1
+Main Street 1
+
+# PoP example-2
+Example Street 10
