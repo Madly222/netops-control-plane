@@ -1,6 +1,5 @@
 /**
  * ONU Monitoring Module - Tree View
- * Path: ~/netops-control-plane/web/js/onu.js
  */
 
 let onuData = [];

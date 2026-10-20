@@ -1,6 +1,5 @@
 /**
  * API Client for MCP Server Monitor
- * Path: ~/netops-control-plane/web/js/api.js
  *
  * Real backend client (the UI example shipped a mock; this replaces it).
  * Auth is cookie-based (session_id, httponly) -> every request uses
