@@ -101,7 +101,7 @@ def send_email_notification(matches: list) -> bool:
 https://water-provider.example/disconnections
 
 --
-MCP Server Monitor
+NetOps Control Plane
 """
 
         msg.attach(MIMEText(body, 'plain', 'utf-8'))

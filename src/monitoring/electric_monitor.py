@@ -142,7 +142,7 @@ def send_email_notification(matches: list) -> bool:
 https://power-provider.example/ru/toate-lucrarile-programate
 
 --
-MCP Server Monitor
+NetOps Control Plane
 """
 
         msg.attach(MIMEText(body, 'plain', 'utf-8'))

@@ -1,6 +1,6 @@
 # Deployment Guide
 
-How to run MCP Server Monitor in production on a Linux host with systemd.
+How to run NetOps Control Plane in production on a Linux host with systemd.
 For configuration details see [`CONFIGURATION.md`](CONFIGURATION.md).
 
 This guide assumes the project lives at `/home/user/netops-control-plane` and
@@ -88,7 +88,7 @@ Create the unit:
 ```ini
 # /etc/systemd/system/mcp-monitor.service
 [Unit]
-Description=MCP Server Monitor
+Description=NetOps Control Plane
 After=network.target
 
 [Service]
