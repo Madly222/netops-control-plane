@@ -148,15 +148,15 @@ Poll an OLT immediately rather than waiting for the next interval.
 ## Utilities (outage monitors)
 
 ### GET `/api/electric/status`
-Latest the power provider outage check result.
+Latest power-outage check result.
 
 ### POST `/api/electric/check`
 Run an electricity-outage check now.
 
-### GET `/api/acc/status`
-Latest water provider water-outage check result.
+### GET `/api/water/status`
+Latest water-outage check result.
 
-### POST `/api/acc/check`
+### POST `/api/water/check`
 Run a water-outage check now.
 
 ---
@@ -221,8 +221,8 @@ All under `/api/admin`, **superadmin only** (`require_superadmin`). See AGENTS.m
 ### Settings (live, no restart)
 | Method | Path | Description |
 |--------|------|-------------|
-| GET/PUT | `/api/admin/config/notifications/{electric\|acc}` | SMTP server/port/user/password/TLS/from/to/enabled (secrets masked on read) |
-| GET/PUT | `/api/admin/config/acc-pattern` | Water (water provider) regex |
+| GET/PUT | `/api/admin/config/notifications/{electric\|water}|{electric\|water}` | SMTP server/port/user/password/TLS/from/to/enabled (secrets masked on read) |
+| GET/PUT | `/api/admin/config/water-pattern` | Water outage regex |
 | GET/PUT | `/api/admin/config/electric-addresses` | Electric watch list |
 
 ### Servers & OLTs (apply after restart)
@@ -248,4 +248,4 @@ All under `/api/admin`, **superadmin only** (`require_superadmin`). See AGENTS.m
 `login`, `login_failed`, `logout`, `command`, `service_action`, `app_restart`,
 `console_exec`, `user_add/delete/role_change/password_change`,
 `server_add/edit/delete`, `olt_add/edit/delete`,
-`settings_notifications/acc_pattern/electric_addresses`, `config_reload`.
+`settings_notifications/water_pattern/electric_addresses`, `config_reload`.

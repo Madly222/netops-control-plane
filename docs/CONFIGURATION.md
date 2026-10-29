@@ -128,15 +128,15 @@ Built-in notification SMTP (separate from the automation channels in `.env`).
 Read directly by the automation modules. Full annotated template:
 [`.env.example`](../.env.example). Grouped by feature:
 
-**Electricity outage** (`electric_monitor`): `ELECTRIC_CHECK_INTERVAL`,
+**Electricity outage** (`electric_monitor`): `ELECTRIC_FEED_URL`, `OUTAGE_CITY`, `ELECTRIC_DETAILS_URL`, `ELECTRIC_CHECK_INTERVAL`,
 `ELECTRIC_EMAIL_ENABLED`, `ELECTRIC_SMTP_SERVER`, `ELECTRIC_SMTP_PORT`,
 `ELECTRIC_EMAIL_FROM`, `ELECTRIC_EMAIL_TO`. Watched addresses live in
 `config/electric_addresses.txt`.
 
-**Water outage** (`acc_monitor`): `ACC_ADDRESS_PATTERN` (regex),
-`ACC_CHECK_INTERVAL`, `ACC_EMAIL_ENABLED`, `ACC_SMTP_SERVER`, `ACC_SMTP_PORT`,
-`ACC_SMTP_USER`, `ACC_SMTP_PASSWORD`, `ACC_SMTP_TLS`, `ACC_EMAIL_FROM`,
-`ACC_EMAIL_TO`.
+**Water outage** (`water_monitor`): `WATER_FEED_URL`, `WATER_ADDRESS_PATTERN` (regex),
+`WATER_CHECK_INTERVAL`, `WATER_EMAIL_ENABLED`, `WATER_SMTP_SERVER`, `WATER_SMTP_PORT`,
+`WATER_SMTP_USER`, `WATER_SMTP_PASSWORD`, `WATER_SMTP_TLS`, `WATER_EMAIL_FROM`,
+`WATER_EMAIL_TO`.
 
 **DHCP→NetBox MAC sync** (`dhcp_mac_sync`): `NETBOX_URL`, `NETBOX_TOKEN`,
 `DHCP_SSH_HOST`, `DHCP_SSH_USER`, `DHCP_SSH_PASS`, `DHCP_SSH_PORT`,
@@ -231,7 +231,7 @@ SysVinit.
 
 | File | Used by | Contents |
 |------|---------|----------|
-| `electric_addresses.txt` | `electric_monitor` | Addresses to match against the power provider outage notices |
+| `electric_addresses.txt` | `electric_monitor` | Addresses to match against the power provider's outage notices |
 
 These contain no credentials and are safe to commit.
 
@@ -282,7 +282,7 @@ The superadmin console writes to two runtime stores that take precedence over
   and are merged back by `config.load_secrets()`. A corrupt store falls back to
   `secrets.yaml` (startup never breaks).
 - **Outage notification settings** (SMTP server/port/user/password/TLS/from/to),
-  the **ACC water pattern**, and the **electric address list** live in the runtime
+  the **water address pattern**, and the **electric address list** live in the runtime
   store / `config/electric_addresses.txt` and are read **live** by the monitors.
 
 To re-seed from `secrets.yaml`, stop the app and delete the relevant key in

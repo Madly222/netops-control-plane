@@ -35,8 +35,8 @@ ROLES = {
     ("GET", "/api/servers/{server_id}/services/{service_type}/diagnostics/{diagnostic_name}"): USER,
     ("POST", "/api/servers/{server_id}/reconnect"): USER,
     ("GET", "/api/settings/auto-check"): USER,
-    ("GET", "/api/acc/status"): USER,
-    ("POST", "/api/acc/check"): USER,
+    ("GET", "/api/water/status"): USER,
+    ("POST", "/api/water/check"): USER,
     ("GET", "/api/electric/status"): USER,
     ("POST", "/api/electric/check"): USER,
     ("GET", "/api/onu/status"): USER,
@@ -118,7 +118,7 @@ def login(client, username):
 @pytest.mark.parametrize("method, path", [
     ("GET", "/api/status"),
     ("GET", "/api/electric/status"),
-    ("GET", "/api/acc/status"),
+    ("GET", "/api/water/status"),
     ("POST", "/api/execute"),
     ("GET", "/api/admin/users"),
 ])

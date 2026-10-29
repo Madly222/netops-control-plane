@@ -26,7 +26,7 @@ state is held in memory and on disk (YAML config, log files, learned patterns).
         │ DHCP host  │ DNS host   │ RADIUS host│  ZTE OLT    │  …
         └────────────┴────────────┴────────────┴────────────┘
 
-   systemd timers ──▶ scripts/check_electric.py, acc_monitor.py, …
+   systemd timers ──▶ scripts/check_electric.py, water_monitor.py, …
                       (one-shot processes reading .env)
 ```
 
@@ -77,7 +77,7 @@ Two kinds of components live here:
 - **In-process monitors** (started by lifespan): `log_watcher`,
   `error_detector`, `health_checker`, `onu_monitor`.
 - **Job modules** (invoked on demand by API or by timers): `electric_monitor`,
-  `acc_monitor`, `dhcp_mac_sync`.
+  `water_monitor`, `dhcp_mac_sync`.
 
 ### 2.5 Web layer (`src/web/`)
 FastAPI app factory, three routers (`auth`, main `api`, `api_netbox`),
@@ -139,10 +139,12 @@ using CLI `snmpwalk` for ONU name/type/status/signal, and SSH for MAC
 retrieval. Thresholds (`good`, `warning`) classify optical signal levels.
 
 ### 3.5 Utility-outage alerts
-`electric_monitor` (the power provider) and `acc_monitor` (water provider) scrape public
+`electric_monitor` and `water_monitor` scrape the public
 outage pages over HTTP (`aiohttp`), match configured addresses/patterns, and
-send email alerts. They run both on demand (`/api/electric/check`,
-`/api/acc/check`) and on a daily systemd timer.
+send email alerts. The page URLs and the city come from `.env`
+(`ELECTRIC_FEED_URL`, `WATER_FEED_URL`, `OUTAGE_CITY`); the parsers are adapters for
+one provider page layout each and are the part to change for another provider. They run both on demand (`/api/electric/check`,
+`/api/water/check`) and on a daily systemd timer.
 
 ---
 

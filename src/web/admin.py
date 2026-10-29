@@ -214,8 +214,8 @@ async def get_audit(
 
 @router.get("/config/notifications/{channel}")
 async def get_notifications(channel: str, user: UserInfo = Depends(require_superadmin)):
-    """Get notification email settings for 'electric' or 'acc' (password masked)."""
-    if channel not in ("electric", "acc"):
+    """Get notification email settings for 'electric' or 'water' (password masked)."""
+    if channel not in ("electric", "water"):
         raise HTTPException(status_code=400, detail="Invalid channel")
     cfg = dict(rc.get_notification_config(channel))
     cfg["smtp_password_set"] = bool(cfg.get("smtp_password"))
@@ -244,30 +244,30 @@ async def update_notifications(
     return {"success": True, "config": result}
 
 
-@router.get("/config/acc-pattern")
-async def get_acc_pattern_ep(user: UserInfo = Depends(require_superadmin)):
-    """Get the water (ACC) address pattern."""
-    return {"pattern": rc.get_acc_pattern()}
+@router.get("/config/water-pattern")
+async def get_water_pattern_ep(user: UserInfo = Depends(require_superadmin)):
+    """Get the water address pattern."""
+    return {"pattern": rc.get_water_pattern()}
 
 
-@router.put("/config/acc-pattern")
-async def set_acc_pattern_ep(
+@router.put("/config/water-pattern")
+async def set_water_pattern_ep(
     body: PatternRequest,
     request: Request,
     user: UserInfo = Depends(require_superadmin),
 ):
-    """Set the water (ACC) address pattern."""
+    """Set the water address pattern."""
     try:
-        pattern = rc.set_acc_pattern(body.pattern)
+        pattern = rc.set_water_pattern(body.pattern)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     try:
-        from src.monitoring.acc_monitor import invalidate as _acc_invalidate
-        _acc_invalidate()
+        from src.monitoring.water_monitor import invalidate as _water_invalidate
+        _water_invalidate()
     except Exception as e:
-        logger.debug(f"ACC invalidate skipped: {e}")
+        logger.debug(f"Water invalidate skipped: {e}")
     get_audit_logger().log(
-        action="settings_acc_pattern",
+        action="settings_water_pattern",
         username=user.username, role=user.role,
         detail=pattern, success=True, ip=_client_ip(request),
     )
@@ -276,8 +276,8 @@ async def set_acc_pattern_ep(
 
 @router.get("/config/schedule/{channel}")
 async def get_schedule_ep(channel: str, user: UserInfo = Depends(require_superadmin)):
-    """Get the daily outage-check time for 'electric' or 'acc'."""
-    if channel not in ("electric", "acc"):
+    """Get the daily outage-check time for 'electric' or 'water'."""
+    if channel not in ("electric", "water"):
         raise HTTPException(status_code=400, detail="Unknown channel")
     return {"time": rc.get_schedule_time(channel)}
 
@@ -289,8 +289,8 @@ async def set_schedule_ep(
     request: Request,
     user: UserInfo = Depends(require_superadmin),
 ):
-    """Set the daily outage-check time (HH:MM) for 'electric' or 'acc'."""
-    if channel not in ("electric", "acc"):
+    """Set the daily outage-check time (HH:MM) for 'electric' or 'water'."""
+    if channel not in ("electric", "water"):
         raise HTTPException(status_code=400, detail="Unknown channel")
     try:
         new_time = rc.set_schedule_time(channel, body.time)

@@ -1,5 +1,10 @@
 """
-Power provider - Electricity Disconnection Monitor
+Electricity Disconnection Monitor
+
+Reads the power provider's daily planned-works pages and matches them against
+the watched addresses. The parser is an adapter for one Romanian-language page
+layout ("<city>, sectorul <name>" blocks); point ELECTRIC_FEED_URL at your
+provider and adjust find_in_city() to its markup.
 """
 
 import re
@@ -36,7 +41,10 @@ class ElectricStatus:
 
 
 ELECTRIC_CONFIG = {
-    "base_url": "https://power-provider.example",
+    # {date} is replaced with YYYY-MM-DD for each day checked
+    "feed_url": os.getenv("ELECTRIC_FEED_URL", ""),
+    "details_url": os.getenv("ELECTRIC_DETAILS_URL", ""),
+    "city": os.getenv("OUTAGE_CITY", ""),
     "check_interval": int(os.getenv("ELECTRIC_CHECK_INTERVAL", 3600)),
     "timeout": 15,
     "days_ahead": 3,
@@ -122,7 +130,7 @@ def send_email_notification(matches: list) -> bool:
         _domain = EMAIL_CONFIG["from"].split("@")[-1] if "@" in EMAIL_CONFIG["from"] else None
         msg['Date'] = formatdate(localtime=True)
         msg['Message-ID'] = make_msgid(domain=_domain)
-        msg['Subject'] = f"⚡ the power provider - planned power outage ({datetime.now().strftime('%d.%m.%Y')})"
+        msg['Subject'] = f"⚡ Planned power outage ({datetime.now().strftime('%d.%m.%Y')})"
 
         body = f"""⚡ A planned power outage matches a monitored address.
 
@@ -139,7 +147,7 @@ FOUND:
         body += f"""
 {'='*50}
 Details on the provider's site:
-https://power-provider.example/ru/toate-lucrarile-programate
+{ELECTRIC_CONFIG['details_url'] or ELECTRIC_CONFIG['feed_url']}
 
 --
 NetOps Control Plane
@@ -277,18 +285,19 @@ def clean_html(content: str) -> str:
     return text
 
 
-def find_in_city(content: str, addresses: list, date_str: str) -> list:
-    """Find addresses only in Springfield sections."""
+def find_in_city(content: str, addresses: list, date_str: str, city: str) -> list:
+    """Find addresses only in the sections of the configured city."""
     matches = []
 
     text = clean_html(content)
 
-    # Split by "Springfield, sectorul" to get Springfield blocks
-    parts = re.split(r'(Springfield,\s*sectorul\s+\w+)', text, flags=re.IGNORECASE)
+    # Split by "<city>, sectorul <name>" to get the city's blocks
+    city_re = re.escape(city)
+    parts = re.split(rf'({city_re},\s*sectorul\s+\w+)', text, flags=re.IGNORECASE)
 
     i = 1
     while i < len(parts):
-        if not re.match(r'Springfield,\s*sectorul', parts[i], re.IGNORECASE):
+        if not re.match(rf'{city_re},\s*sectorul', parts[i], re.IGNORECASE):
             i += 1
             continue
 
@@ -332,7 +341,7 @@ def find_in_city(content: str, addresses: list, date_str: str) -> list:
                 else:
                     display = block[:200].strip()
 
-                match_str = f"[{date_str}] ⚡ {addr} (Springfield, {sector})"
+                match_str = f"[{date_str}] ⚡ {addr} ({city}, {sector})"
                 if time_info:
                     match_str += f" ⏰ {time_info}"
                 match_str += f"\n   📍 ...{display}..."
@@ -389,6 +398,10 @@ async def check_electric_status(force: bool = False) -> ElectricStatus:
             _cached_status.ok = len(_cached_status.matches) == 0
             return _cached_status
 
+    if not ELECTRIC_CONFIG['feed_url'] or not ELECTRIC_CONFIG['city']:
+        logger.warning("Electric: ELECTRIC_FEED_URL or OUTAGE_CITY not set - skipping")
+        return ElectricStatus(ok=True, last_check=datetime.now(), matches=[], error="not configured")
+
     addresses = load_addresses()
     if not addresses:
         logger.warning("Electric: no addresses in config/electric_addresses.txt")
@@ -409,7 +422,7 @@ async def check_electric_status(force: bool = False) -> ElectricStatus:
         for days in range(0, ELECTRIC_CONFIG['days_ahead'] + 1):
             date = datetime.now() + timedelta(days=days)
             date_str = date.strftime("%Y-%m-%d")
-            url = f"{ELECTRIC_CONFIG['base_url']}/ro/lucrari-programate-{date_str}"
+            url = ELECTRIC_CONFIG['feed_url'].replace('{date}', date_str)
             urls.append((date_str, url))
 
         tasks = [fetch_page(session, url) for _, url in urls]
@@ -420,7 +433,7 @@ async def check_electric_status(force: bool = False) -> ElectricStatus:
                 continue
 
             date_str = urls[i][0]
-            matches = find_in_city(result, addresses, date_str)
+            matches = find_in_city(result, addresses, date_str, ELECTRIC_CONFIG['city'])
 
             if matches:
                 matched_dates.append(date_str)

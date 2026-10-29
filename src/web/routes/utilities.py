@@ -1,4 +1,4 @@
-"""Utility outage monitors: water (water provider) and electricity (the power provider)."""
+"""Utility outage monitors: water and electricity."""
 
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,36 +9,36 @@ from src.web.auth import get_current_user, UserInfo
 router = APIRouter()
 
 
-@router.get("/acc/status")
-async def get_acc_status(user: UserInfo = Depends(get_current_user)):
-    """Get Water provider water disconnection status."""
+@router.get("/water/status")
+async def get_water_status(user: UserInfo = Depends(get_current_user)):
+    """Get water disconnection status."""
     try:
-        from src.monitoring.acc_monitor import get_status_dict, check_acc_status
+        from src.monitoring.water_monitor import get_status_dict, check_water_status
         import asyncio
-        asyncio.create_task(check_acc_status())
+        asyncio.create_task(check_water_status())
         return get_status_dict()
     except ImportError:
-        return {"ok": True, "last_check": None, "matches_count": 0, "matches": [], "error": "ACC module not installed"}
+        return {"ok": True, "last_check": None, "matches_count": 0, "matches": [], "error": "Water module not installed"}
     except Exception as e:
-        logger.error(f"ACC status error: {e}")
+        logger.error(f"Water status error: {e}")
         return {"ok": True, "last_check": None, "matches_count": 0, "matches": [], "error": str(e)}
 
 
-@router.post("/acc/check")
-async def check_acc_now(user: UserInfo = Depends(get_current_user)):
-    """Force check Water provider now."""
+@router.post("/water/check")
+async def check_water_now(user: UserInfo = Depends(get_current_user)):
+    """Force a water-outage check now."""
     try:
-        from src.monitoring.acc_monitor import check_acc_status, get_status_dict
-        await check_acc_status(force=True)
+        from src.monitoring.water_monitor import check_water_status, get_status_dict
+        await check_water_status(force=True)
         return get_status_dict()
     except Exception as e:
-        logger.error(f"ACC check error: {e}")
+        logger.error(f"Water check error: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/electric/status")
 async def get_electric_status(user: UserInfo = Depends(get_current_user)):
-    """Get the power provider disconnection status."""
+    """Get the power-outage status."""
     try:
         from src.monitoring.electric_monitor import get_status_dict, check_electric_status
         import asyncio
@@ -53,7 +53,7 @@ async def get_electric_status(user: UserInfo = Depends(get_current_user)):
 
 @router.post("/electric/check")
 async def check_electric_now(user: UserInfo = Depends(get_current_user)):
-    """Force check the power provider now."""
+    """Force a power-outage check now."""
     try:
         from src.monitoring.electric_monitor import check_electric_status, get_status_dict
         await check_electric_status(force=True)

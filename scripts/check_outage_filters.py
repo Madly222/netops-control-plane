@@ -15,11 +15,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import src.monitoring.electric_monitor as em  # noqa: E402
-import src.monitoring.acc_monitor as acc       # noqa: E402
+import src.monitoring.water_monitor as water       # noqa: E402
 
 _TMP = Path(tempfile.mkdtemp())
 em.NOTIFIED_FILE = _TMP / "electric_notified.json"
-acc.NOTIFIED_FILE = _TMP / "acc_notified.json"
+water.NOTIFIED_FILE = _TMP / "water_notified.json"
 
 PASS, FAIL = "\033[92mPASS\033[0m", "\033[91mFAIL\033[0m"
 _fail = 0
@@ -40,11 +40,11 @@ past_end = (now - timedelta(hours=1)).strftime('%H:%M')
 future_end = (now + timedelta(hours=2)).strftime('%H:%M')
 
 print("\n== electric: time/date filtering ==")
-m_expired = f"[{today}] ⚡ Main Street 71 (Springfield, Centru) ⏰ 09:00-{past_end}\n   📍 ...str..."
-m_active = f"[{today}] ⚡ Main Street 71 (Springfield, Centru) ⏰ 09:00-{future_end}\n   📍 ...str..."
-m_yesterday = f"[{yesterday}] ⚡ Main Street 71 ⏰ 09:00-23:00"
-m_tomorrow = f"[{tomorrow}] ⚡ Main Street 71 ⏰ 09:00-12:00"
-m_nodate = "⚡ Main Street 71 no date"
+m_expired = f"[{today}] ⚡ Main Street 1 (Springfield, Centre) ⏰ 09:00-{past_end}\n   📍 ...str..."
+m_active = f"[{today}] ⚡ Main Street 1 (Springfield, Centre) ⏰ 09:00-{future_end}\n   📍 ...str..."
+m_yesterday = f"[{yesterday}] ⚡ Main Street 1 ⏰ 09:00-23:00"
+m_tomorrow = f"[{tomorrow}] ⚡ Main Street 1 ⏰ 09:00-12:00"
+m_nodate = "⚡ Main Street 1 no date"
 
 out = em.filter_current_matches([m_expired, m_active, m_yesterday, m_tomorrow, m_nodate])
 check("today's expired outage dropped", m_expired not in out)
@@ -71,33 +71,33 @@ em.mark_notified([m_yesterday])
 em.cleanup_old_notifications()
 check("past-date signature pruned", em._match_signature(m_yesterday) not in em.get_notified_signatures())
 
-print("\n== water (ACC): restoration-time filtering ==")
+print("\n== water: restoration-time filtering ==")
 end_past = (now - timedelta(hours=1)).strftime('%d.%m.%Y %H:%M')
 end_future = (now + timedelta(hours=3)).strftime('%d.%m.%Y %H:%M')
-w_expired = f"[Works] 📍 Centru: Main Street 71 [în lucru]\n   From: 01.01.2026 09:00, until: {end_past}"
-w_active = f"[Works] 📍 Centru: Main Street 71 [în lucru]\n   From: 01.01.2026 09:00, until: {end_future}"
+w_expired = f"[Works] 📍 Centre: Main Street 1 [în lucru]\n   From: 01.01.2026 09:00, until: {end_past}"
+w_active = f"[Works] 📍 Centre: Main Street 1 [în lucru]\n   From: 01.01.2026 09:00, until: {end_future}"
 w_notice = "[Notice] ⚠️ Planned disconnection\n   📅 mâine\n   📍 Streets: Main Street"
 
-wout = acc.filter_current_matches([w_expired, w_active, w_notice])
+wout = water.filter_current_matches([w_expired, w_active, w_notice])
 check("restored (past 'until') dropped", w_expired not in wout)
 check("ongoing (future 'until') kept", w_active in wout)
 check("plain notice (no 'until') kept", w_notice in wout)
 
-print("\n== water (ACC): labels the parser builds are the ones it reads ==")
+print("\n== water: labels the parser builds are the ones it reads ==")
 row = (
-    "<tr><td colspan='5' class='sector_title'>Centru</td></tr>"
-    f"<tr><td>în lucru</td><td>x</td><td>Main Street</td><td>71</td><td>avarie</td>"
+    "<tr><td colspan='5' class='sector_title'>Centre</td></tr>"
+    f"<tr><td>în lucru</td><td>x</td><td>Main Street</td><td>1</td><td>avarie</td>"
     f"<td>01.01.2026 09:00</td><td>{end_past}</td></tr>"
 )
-parsed = acc.parse_table_rows(row, acc.re.compile(r"Main Street\s*71"))
+parsed = water.parse_table_rows(row, water.re.compile(r"Main Street\s*1\b"))
 check("table row parsed", len(parsed) == 1)
-check("its end time is read back", bool(parsed) and acc._match_end(parsed[0]) is not None)
-check("and it is dropped once past", bool(parsed) and acc.filter_current_matches(parsed) == [])
+check("its end time is read back", bool(parsed) and water._match_end(parsed[0]) is not None)
+check("and it is dropped once past", bool(parsed) and water.filter_current_matches(parsed) == [])
 
 print("\n== water: content de-dup ==")
-acc.mark_notified([w_active])
-check("active disconnection marked", acc._match_signature(w_active) in acc.get_notified_signatures())
-new_w = [m for m in [w_active, w_notice] if acc._match_signature(m) not in acc.get_notified_signatures()]
+water.mark_notified([w_active])
+check("active disconnection marked", water._match_signature(w_active) in water.get_notified_signatures())
+new_w = [m for m in [w_active, w_notice] if water._match_signature(m) not in water.get_notified_signatures()]
 check("new notice still triggers", w_notice in new_w and w_active not in new_w)
 
 print("\n== invalidate() resets cache ==")
@@ -105,10 +105,10 @@ em._cached_status = "x"
 em._last_check_time = now
 em.invalidate()
 check("electric cache cleared", em._cached_status is None and em._last_check_time is None)
-acc._cached_status = "x"
-acc._last_check_time = now
-acc.invalidate()
-check("water cache cleared", acc._cached_status is None and acc._last_check_time is None)
+water._cached_status = "x"
+water._last_check_time = now
+water.invalidate()
+check("water cache cleared", water._cached_status is None and water._last_check_time is None)
 
 print()
 if _fail:

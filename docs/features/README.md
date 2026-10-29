@@ -31,7 +31,7 @@ flowchart LR
 | 6 | [🗂️ NetBox](06-netbox.md) | NetBox auto-fill from switches and routers, MAC and port sync | **NetBox** |
 | 6a | ↳ [🔄 MAC and port sync](06a-netbox-mac-sync.md) | phpDHCPAdmin → MAC → subscriber port, reading the report | **NetBox → Sync MAC / Sync Ports** |
 | 6b | ↳ [🔗 CDP and auto-fill](06b-netbox-cdp.md) | what is read from Cisco, how cables are built, what is written to NetBox | **NetBox → Single Device / Batch** |
-| 7 | [⚡💧 Power and water outages](07-outages.md) | the power provider, water provider, check schedule, e-mails | header ⚡ 💧, **Admin → Settings** |
+| 7 | [⚡💧 Power and water outages](07-outages.md) | power and water provider pages, check schedule, e-mails | header ⚡ 💧, **Admin → Settings** |
 | 8 | [👑 Superadmin console](08-admin.md) | users, servers, OLTs, settings, `.env`, audit log | **Admin** |
 
 ## 🎨 How to read the trees

@@ -804,8 +804,8 @@ function setupUtilityIndicators() {
         wrapId: 'waterStatus',
         dotId: 'waterDot',
         label: 'Water',
-        statusFn: () => API.acc.status(),
-        checkFn: () => API.acc.check(),
+        statusFn: () => API.water.status(),
+        checkFn: () => API.water.check(),
     });
 }
 

@@ -54,7 +54,7 @@ Host/port come from `secrets.yaml > mcp_server`.
    The merge is wrapped in try/except: a corrupt store never breaks startup
    (falls back to `secrets.yaml`).
 
-3. **Outage settings are read live.** `electric_monitor` / `acc_monitor` now read
+3. **Outage settings are read live.** `electric_monitor` / `water_monitor` now read
    email/SMTP config and the water pattern from `runtime_config` on each run
    (with `.env` fallback), so web edits apply **without restart**. Server/OLT
    edits need a restart (SSH pool + monitors initialise at startup).
@@ -106,7 +106,7 @@ Host/port come from `secrets.yaml > mcp_server`.
 | **`users.py`** | Runtime user store (`sessions/users.json`), seeded from secrets. `get_user_store()`, verify/add/delete/set_role/set_password. Roles in `VALID_ROLES`. |
 | **`audit.py`** | Append-only audit log (`logs/audit.jsonl`). `get_audit_logger().log(...)`, `.query(...)`. |
 | **`admin.py`** | `/api/admin/*` superadmin endpoints: user CRUD, audit read, settings (notifications/pattern/addresses), server CRUD, OLT CRUD, config reload. |
-| **`runtime_config.py`** | Writable runtime store: notification configs (live), ACC pattern, electric addresses, server & OLT stores (seed-and-own). |
+| **`runtime_config.py`** | Writable runtime store: notification configs (live), water pattern, electric addresses, server & OLT stores (seed-and-own). |
 
 ### Services (`src/services/`)
 `base.py` (`BaseService` ABC), `dhcp.py`, `dns.py`, `radius.py`. Registered in
@@ -114,8 +114,8 @@ Host/port come from `secrets.yaml > mcp_server`.
 
 ### Monitoring & automation (`src/monitoring/`)
 `log_watcher`, `error_detector`, `health_checker`, `onu_monitor`
-(in-process monitors); `electric_monitor`, `acc_monitor` (read settings live from
-(temporary), `dhcp_mac_sync`.
+(in-process monitors); `electric_monitor`, `water_monitor` (read settings live from
+`runtime_config`), `outage_scheduler`, `dhcp_mac_sync`, `mac_port_sync`.
 
 ### Scripts (`scripts/`)
 `manage_users.py` (user CLI / recovery), `check_claude.py` (Claude key/model
@@ -189,13 +189,13 @@ Tests: `tests/test_command_resolver.py` (no live server / key needed).
 | `secrets.yaml` | infra: servers, SSH, Claude, web users, OLTs (seed source) | ❌ |
 | `.env` | automation defaults | ❌ |
 | `sessions/users.json` | runtime user store (source of truth after seed) | ❌ |
-| `sessions/runtime_settings.json` | notifications, ACC pattern, server & OLT overrides | ❌ |
+| `sessions/runtime_settings.json` | notifications, water pattern, server & OLT overrides | ❌ |
 | `sessions/server_profiles.json` | detected init/distro per server (resolver) | ❌ |
 | `sessions/resolver_cache.json` | cached intent→command per server+profile | ❌ |
 | `config/settings.yaml` | intervals, logging, cache/rate-limit | ✅ |
 | `config/safe_actions.yaml` | auto-remediation risk policy | ✅ |
 | `config/services/*.yaml` | per-service detection | ✅ |
-| `config/electric_addresses.txt` | electric watch list (web-editable) | ✅ |
+| `config/electric_addresses.txt` | electric watch list (web-editable) | ❌ (start from `.example.txt`) |
 | `logs/audit.jsonl` | audit log | ❌ |
 | `knowledge_base/*.yaml` | error patterns / noise filters | ✅ |
 

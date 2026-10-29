@@ -7,8 +7,8 @@ with fallback to environment variables / defaults, so edits take effect without
 a restart.
 
 Covers:
-- Notification email settings (electric + acc channels)
-- ACC (water) address pattern
+- Notification email settings (electric + water channels)
+- Water address pattern
 - Electric address list (stored in config/electric_addresses.txt)
 """
 
@@ -59,7 +59,7 @@ def _save(data: dict) -> None:
 # ==============================================================================
 # NOTIFICATION EMAIL SETTINGS
 # ==============================================================================
-# Defaults mirror the original behaviour in electric_monitor / acc_monitor.
+# Defaults mirror the original behaviour in electric_monitor / water_monitor.
 
 def _env(*keys: str, default: str = "") -> str:
     for k in keys:
@@ -73,28 +73,28 @@ def _default_notification(channel: str) -> dict:
     if channel == "electric":
         return {
             "enabled": _env("ELECTRIC_EMAIL_ENABLED", default="true").lower() == "true",
-            "smtp_server": _env("ELECTRIC_SMTP_SERVER", "ACC_SMTP_SERVER", default="mail.example.com"),
-            "smtp_port": int(_env("ELECTRIC_SMTP_PORT", "ACC_SMTP_PORT", default="25")),
-            "smtp_user": _env("ELECTRIC_SMTP_USER", "ACC_SMTP_USER", default=""),
-            "smtp_password": _env("ELECTRIC_SMTP_PASSWORD", "ACC_SMTP_PASSWORD", default=""),
-            "smtp_tls": _env("ELECTRIC_SMTP_TLS", "ACC_SMTP_TLS", default="false").lower() == "true",
-            "from": _env("ELECTRIC_EMAIL_FROM", "ACC_EMAIL_FROM", default="control@example.com"),
-            "to": _env("ELECTRIC_EMAIL_TO", "ACC_EMAIL_TO", default="admin@example.com"),
+            "smtp_server": _env("ELECTRIC_SMTP_SERVER", "WATER_SMTP_SERVER", default="mail.example.com"),
+            "smtp_port": int(_env("ELECTRIC_SMTP_PORT", "WATER_SMTP_PORT", default="25")),
+            "smtp_user": _env("ELECTRIC_SMTP_USER", "WATER_SMTP_USER", default=""),
+            "smtp_password": _env("ELECTRIC_SMTP_PASSWORD", "WATER_SMTP_PASSWORD", default=""),
+            "smtp_tls": _env("ELECTRIC_SMTP_TLS", "WATER_SMTP_TLS", default="false").lower() == "true",
+            "from": _env("ELECTRIC_EMAIL_FROM", "WATER_EMAIL_FROM", default="control@example.com"),
+            "to": _env("ELECTRIC_EMAIL_TO", "WATER_EMAIL_TO", default="admin@example.com"),
         }
     return {
-        "enabled": _env("ACC_EMAIL_ENABLED", default="true").lower() == "true",
-        "smtp_server": _env("ACC_SMTP_SERVER", default="mail.example.com"),
-        "smtp_port": int(_env("ACC_SMTP_PORT", default="25")),
-        "smtp_user": _env("ACC_SMTP_USER", default=""),
-        "smtp_password": _env("ACC_SMTP_PASSWORD", default=""),
-        "smtp_tls": _env("ACC_SMTP_TLS", default="false").lower() == "true",
-        "from": _env("ACC_EMAIL_FROM", default="control@example.com"),
-        "to": _env("ACC_EMAIL_TO", default="admin@example.com"),
+        "enabled": _env("WATER_EMAIL_ENABLED", default="true").lower() == "true",
+        "smtp_server": _env("WATER_SMTP_SERVER", default="mail.example.com"),
+        "smtp_port": int(_env("WATER_SMTP_PORT", default="25")),
+        "smtp_user": _env("WATER_SMTP_USER", default=""),
+        "smtp_password": _env("WATER_SMTP_PASSWORD", default=""),
+        "smtp_tls": _env("WATER_SMTP_TLS", default="false").lower() == "true",
+        "from": _env("WATER_EMAIL_FROM", default="control@example.com"),
+        "to": _env("WATER_EMAIL_TO", default="admin@example.com"),
     }
 
 
 def get_notification_config(channel: str) -> dict:
-    """Return effective notification config for 'electric' or 'acc' (live)."""
+    """Return effective notification config for 'electric' or 'water' (live)."""
     cfg = _default_notification(channel)
     stored = _load().get("notifications", {}).get(channel, {})
     cfg.update({k: v for k, v in stored.items() if v is not None})
@@ -103,7 +103,7 @@ def get_notification_config(channel: str) -> dict:
 
 def set_notification_config(channel: str, values: dict) -> dict:
     """Persist notification config for a channel. Returns the effective config."""
-    if channel not in ("electric", "acc"):
+    if channel not in ("electric", "water"):
         raise ValueError(f"Invalid channel: {channel}")
     allowed = {"enabled", "smtp_server", "smtp_port", "smtp_user", "smtp_password", "smtp_tls", "from", "to"}
     clean = {}
@@ -133,18 +133,18 @@ def get_notification_recipients(channel: str) -> list[str]:
 
 
 # ==============================================================================
-# ACC (WATER) ADDRESS PATTERN
+# WATER ADDRESS PATTERN
 # ==============================================================================
 
-def get_acc_pattern() -> str:
-    """Return the effective ACC address pattern (live)."""
-    stored = _load().get("acc_pattern")
+def get_water_pattern() -> str:
+    """Return the effective Water address pattern (live)."""
+    stored = _load().get("water_pattern")
     if stored:
         return stored
-    return _env("ACC_ADDRESS_PATTERN", default=r"Main Street\s*,?\s*71")
+    return _env("WATER_ADDRESS_PATTERN", default=r"Main\s+Street\s*,?\s*1\b")
 
 
-def set_acc_pattern(pattern: str) -> str:
+def set_water_pattern(pattern: str) -> str:
     pattern = (pattern or "").strip()
     if not pattern:
         raise ValueError("Pattern is required")
@@ -154,7 +154,7 @@ def set_acc_pattern(pattern: str) -> str:
         raise ValueError(f"Invalid regex pattern: {e}") from e
     with _lock:
         data = _load()
-        data["acc_pattern"] = pattern
+        data["water_pattern"] = pattern
         _save(data)
     return pattern
 
@@ -189,7 +189,7 @@ def set_electric_addresses(addresses: list[str]) -> list[str]:
             clean.append(a)
             seen.add(a)
     header = (
-        "# Addresses monitored for electricity outages (Springfield)\n"
+        "# Addresses monitored for electricity outages\n"
         "# Format: Street HouseNumber  |  one per line\n"
         "# Managed via the web admin panel.\n\n"
     )
@@ -501,11 +501,11 @@ _TIME_RE = re.compile(r'^([01]?\d|2[0-3]):([0-5]\d)$')
 
 
 def get_schedule_time(channel: str) -> str:
-    """Return the daily check time 'HH:MM' for a channel ('electric' | 'acc')."""
+    """Return the daily check time 'HH:MM' for a channel ('electric' | 'water')."""
     stored = _load().get("schedules", {}).get(channel)
     if stored and _TIME_RE.match(stored):
         return stored
-    env_key = {"electric": "ELECTRIC_CHECK_TIME", "acc": "ACC_CHECK_TIME"}.get(channel, "")
+    env_key = {"electric": "ELECTRIC_CHECK_TIME", "water": "WATER_CHECK_TIME"}.get(channel, "")
     if env_key:
         ev = _env(env_key, default="")
         if _TIME_RE.match(ev):

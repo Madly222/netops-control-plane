@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('addUserBtn').addEventListener('click', addUser);
             document.getElementById('auditRefreshBtn').addEventListener('click', loadAudit);
             document.getElementById('saveAddressesBtn').addEventListener('click', saveElectricAddresses);
-            document.getElementById('saveAccPatternBtn').addEventListener('click', saveAccPattern);
+            document.getElementById('saveWaterPatternBtn').addEventListener('click', saveWaterPattern);
             document.getElementById('saveScheduleBtn').addEventListener('click', saveSchedule);
             document.getElementById('saveAutoCheckBtn').addEventListener('click', saveAutoCheck);
             document.getElementById('saveSshTimeoutBtn').addEventListener('click', saveSshTimeout);
@@ -182,14 +182,14 @@ async function loadSettings() {
         document.getElementById('electricAddresses').value = (ea.addresses || []).join('\n');
     } catch (e) { /* ignore */ }
     try {
-        const ap = await API.admin.getAccPattern();
-        document.getElementById('accPattern').value = ap.pattern || '';
+        const ap = await API.admin.getWaterPattern();
+        document.getElementById('waterPattern').value = ap.pattern || '';
     } catch (e) { /* ignore */ }
     try {
         const se = await API.admin.getSchedule('electric');
         document.getElementById('scheduleElectric').value = se.time || '08:00';
-        const sa = await API.admin.getSchedule('acc');
-        document.getElementById('scheduleAcc').value = sa.time || '08:00';
+        const sa = await API.admin.getSchedule('water');
+        document.getElementById('scheduleWater').value = sa.time || '08:00';
     } catch (e) { /* ignore */ }
     try {
         const dz = await API.admin.getDnsZone();
@@ -215,7 +215,7 @@ async function loadSettings() {
         document.getElementById('autoCheckInterval').value = ac.interval_seconds || 30;
     } catch (e) { /* ignore */ }
     renderNotifChannel('electric', 'notifElectric', '⚡ Electric');
-    renderNotifChannel('acc', 'notifAcc', '💧 Water (water provider)');
+    renderNotifChannel('water', 'notifWater', '💧 Water');
     loadServersAdmin();
     loadOltsAdmin();
 }
@@ -281,11 +281,11 @@ async function saveElectricAddresses() {
     }
 }
 
-async function saveAccPattern() {
-    const pattern = document.getElementById('accPattern').value.trim();
+async function saveWaterPattern() {
+    const pattern = document.getElementById('waterPattern').value.trim();
     if (!pattern) { await Dialog.alert('Pattern is required'); return; }
     try {
-        await API.admin.saveAccPattern(pattern);
+        await API.admin.saveWaterPattern(pattern);
         loadAudit();
         await Dialog.alert('Saved');
     } catch (e) {
@@ -295,11 +295,11 @@ async function saveAccPattern() {
 
 async function saveSchedule() {
     const et = document.getElementById('scheduleElectric').value;
-    const at = document.getElementById('scheduleAcc').value;
+    const at = document.getElementById('scheduleWater').value;
     if (!et || !at) { await Dialog.alert('Set both times (HH:MM)'); return; }
     try {
         await API.admin.saveSchedule('electric', et);
-        await API.admin.saveSchedule('acc', at);
+        await API.admin.saveSchedule('water', at);
         loadAudit();
         await Dialog.alert(`Schedule saved — electric ${et}, water ${at}`);
     } catch (e) {

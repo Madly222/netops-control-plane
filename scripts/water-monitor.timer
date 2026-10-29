@@ -1,5 +1,5 @@
 [Unit]
-Description=Run ACC Monitor daily at 8:00
+Description=Run Water Monitor daily at 8:00
 
 [Timer]
 OnCalendar=*-*-* 08:00:00

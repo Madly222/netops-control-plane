@@ -1,4 +1,4 @@
-# Addresses monitored for electricity outages (the power provider notices, Springfield)
+# Addresses monitored for electricity outages (matched against the power provider's planned-works pages)
 # Format: Street HouseNumber  |  one per line
 # Copy to config/electric_addresses.txt (git-ignored) or manage it from the web admin panel.
 

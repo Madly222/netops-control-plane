@@ -9,11 +9,11 @@ Once a day the panel reads the utility providers' websites and sends an e-mail i
 flowchart LR
     ROOT(["⚡💧 Outages"]):::root
 
-    ROOT --> EL["⚡ Electricity<br/>the power provider"]:::group
+    ROOT --> EL["⚡ Electricity<br/>provider page"]:::group
     EL --> E1["Reads the planned<br/>works page"]:::auto
     EL --> E2["Matches the address list,<br/>house numbers included"]:::auto
 
-    ROOT --> WA["💧 Water<br/>water provider"]:::group
+    ROOT --> WA["💧 Water<br/>provider page"]:::group
     WA --> W1["Reads the<br/>disconnections page"]:::auto
     WA --> W2["Looks for a match<br/>with a pattern"]:::auto
 
@@ -64,11 +64,11 @@ flowchart LR
 
 | What | File |
 |------|------|
-| Power: the power provider | `src/monitoring/electric_monitor.py`, addresses in `config/electric_addresses.txt` |
-| Water: water provider | `src/monitoring/acc_monitor.py` |
+| Power | `src/monitoring/electric_monitor.py`, addresses in `config/electric_addresses.txt` |
+| Water | `src/monitoring/water_monitor.py` |
 | Built-in schedule | `src/monitoring/outage_scheduler.py` |
 | Settings changed at runtime | `src/web/runtime_config.py` |
-| `/api/electric/*`, `/api/acc/*` endpoints | `src/web/routes/utilities.py` |
+| `/api/electric/*`, `/api/water/*` endpoints | `src/web/routes/utilities.py` |
 
 ---
 [← CDP and auto-fill](06b-netbox-cdp.md) · [Map](README.md) · [Next: Superadmin console →](08-admin.md)

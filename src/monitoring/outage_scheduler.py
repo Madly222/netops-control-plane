@@ -22,7 +22,7 @@ from src.core.config import LOGS_DIR
 
 STATE_FILE = LOGS_DIR / "outage_schedule_state.json"
 
-_CHANNELS = ("electric", "acc")
+_CHANNELS = ("electric", "water")
 
 
 def _load_state() -> dict:
@@ -55,9 +55,9 @@ def _target_today(channel: str, now: datetime) -> datetime:
 async def run_due_checks() -> None:
     """Run any channel whose configured time has arrived and hasn't run today."""
     from src.monitoring.electric_monitor import check_electric_status
-    from src.monitoring.acc_monitor import check_acc_status
+    from src.monitoring.water_monitor import check_water_status
 
-    runners = {"electric": check_electric_status, "acc": check_acc_status}
+    runners = {"electric": check_electric_status, "water": check_water_status}
     now = datetime.now()
     today = now.strftime("%Y-%m-%d")
     state = _load_state()

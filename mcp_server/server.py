@@ -117,7 +117,7 @@ async def get_olt_onus(olt_id: str) -> str:
 
 @mcp.tool()
 async def get_power_outages() -> str:
-    """Planned electricity outages (the power provider notices) that affect monitored network sites."""
+    """Planned electricity outages (from the power provider's notices) that affect monitored network sites."""
     return await _get("/api/electric/status")
 
 

@@ -125,22 +125,22 @@ The `scripts/` directory ships ready-made one-shot `.service` units and matching
 
 | Job | Service unit | Timer | Default schedule | Runs |
 |-----|--------------|-------|------------------|------|
-| Water outage | `acc-monitor.service` | `acc-monitor.timer` | daily 08:00 | `scripts/acc_monitor.py` |
+| Water outage | `water-monitor.service` | `water-monitor.timer` | daily 08:00 | `scripts/water_monitor.py` |
 | Electricity outage | `electric-monitor.service` | `electric-monitor.timer` | daily 09:00 | `scripts/check_electric.py` |
 
 Install (example for both):
 
 ```bash
-sudo cp scripts/acc-monitor.service scripts/acc-monitor.timer \
+sudo cp scripts/water-monitor.service scripts/water-monitor.timer \
         scripts/electric-monitor.service scripts/electric-monitor.timer \
         /etc/systemd/system/
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now acc-monitor.timer
+sudo systemctl enable --now water-monitor.timer
 sudo systemctl enable --now electric-monitor.timer
 
 # Verify schedule
-systemctl list-timers 'acc-monitor*' 'electric-monitor*'
+systemctl list-timers 'water-monitor*' 'electric-monitor*'
 
 # Trigger one run immediately to test
 sudo systemctl start electric-monitor.service
@@ -159,7 +159,7 @@ journalctl -u mcp-monitor -f
 tail -f /home/user/netops-control-plane/logs/app.log
 
 # Timer job logs
-journalctl -u acc-monitor.service
+journalctl -u water-monitor.service
 journalctl -u electric-monitor.service
 
 # Restart after config change

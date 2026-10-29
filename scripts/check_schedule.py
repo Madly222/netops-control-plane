@@ -37,18 +37,18 @@ print("\n== runtime_config: schedule validation ==")
 check("default is 08:00", rc.get_schedule_time("electric") == "08:00")
 check("normalizes 8:05 -> 08:05", rc.set_schedule_time("electric", "8:05") == "08:05")
 check("stores and reads back", rc.get_schedule_time("electric") == "08:05")
-check("accepts 23:59", rc.set_schedule_time("acc", "23:59") == "23:59")
+check("accepts 23:59", rc.set_schedule_time("water", "23:59") == "23:59")
 for bad in ("25:00", "08:60", "8", "abc", "08:5", ""):
     try:
-        rc.set_schedule_time("acc", bad)
+        rc.set_schedule_time("water", bad)
         check(f"rejects {bad!r}", False)
     except ValueError:
         check(f"rejects {bad!r}", True)
-check("channels independent", rc.get_schedule_time("electric") == "08:05" and rc.get_schedule_time("acc") == "23:59")
+check("channels independent", rc.get_schedule_time("electric") == "08:05" and rc.get_schedule_time("water") == "23:59")
 
 print("\n== scheduler: due-today decision ==")
 # Inject fake monitor modules so run_due_checks doesn't need network.
-calls = {"electric": 0, "acc": 0}
+calls = {"electric": 0, "water": 0}
 
 
 def _make_fake(name):
@@ -63,7 +63,7 @@ def _make_fake(name):
     return mod
 
 sys.modules["src.monitoring.electric_monitor"] = _make_fake("electric")
-sys.modules["src.monitoring.acc_monitor"] = _make_fake("acc")
+sys.modules["src.monitoring.water_monitor"] = _make_fake("water")
 
 import src.monitoring.outage_scheduler as sched  # noqa: E402
 sched.STATE_FILE = _TMP / "outage_schedule_state.json"
@@ -72,15 +72,15 @@ now = datetime.now()
 # Set both targets to one minute in the PAST -> due now.
 past = (now - timedelta(minutes=1)).strftime("%H:%M")
 rc.set_schedule_time("electric", past)
-rc.set_schedule_time("acc", past)
+rc.set_schedule_time("water", past)
 
 asyncio.run(sched.run_due_checks())
 check("electric ran (past target, not run today)", calls["electric"] == 1, f"calls={calls['electric']}")
-check("acc ran", calls["acc"] == 1)
+check("water ran", calls["water"] == 1)
 
 # Second invocation same day -> already ran -> no re-run.
 asyncio.run(sched.run_due_checks())
-check("no re-run same day", calls["electric"] == 1 and calls["acc"] == 1)
+check("no re-run same day", calls["electric"] == 1 and calls["water"] == 1)
 
 # Future target, fresh state -> not due.
 calls["electric"] = 0

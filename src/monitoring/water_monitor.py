@@ -1,5 +1,5 @@
 """
-Water provider Water Disconnection Monitor Module
+Water Disconnection Monitor Module
 """
 
 import re
@@ -27,37 +27,37 @@ except ImportError:
 
 
 @dataclass
-class ACCStatus:
+class WaterStatus:
     ok: bool = True
     last_check: Optional[datetime] = None
     matches: list = field(default_factory=list)
     error: Optional[str] = None
 
 
-ACC_CONFIG = {
-    "base_url": "https://water-provider.example/disconnections",
-    "address_pattern": os.getenv("ACC_ADDRESS_PATTERN", r"Main Street\s*,?\s*71"),
-    "check_interval": int(os.getenv("ACC_CHECK_INTERVAL", 3600)),
+WATER_CONFIG = {
+    "base_url": os.getenv("WATER_FEED_URL", ""),
+    "address_pattern": os.getenv("WATER_ADDRESS_PATTERN", r"Main\s+Street\s*,?\s*1\b"),
+    "check_interval": int(os.getenv("WATER_CHECK_INTERVAL", 3600)),
     "timeout": 30,
 }
 
 def _email_config() -> dict:
     """Read notification config live from the runtime store (with env fallback)."""
     from src.web.runtime_config import get_notification_config, get_notification_recipients
-    cfg = dict(get_notification_config("acc"))
-    cfg["to"] = get_notification_recipients("acc")
+    cfg = dict(get_notification_config("water"))
+    cfg["to"] = get_notification_recipients("water")
     return cfg
 
 
-def _acc_pattern() -> str:
-    """Read the ACC address pattern live from the runtime store."""
-    from src.web.runtime_config import get_acc_pattern
-    return get_acc_pattern()
+def _water_pattern() -> str:
+    """Read the Water address pattern live from the runtime store."""
+    from src.web.runtime_config import get_water_pattern
+    return get_water_pattern()
 
-CACHE_FILE = LOGS_DIR / "acc_status.json"
-NOTIFIED_FILE = LOGS_DIR / "acc_notified.json"
+CACHE_FILE = LOGS_DIR / "water_status.json"
+NOTIFIED_FILE = LOGS_DIR / "water_notified.json"
 
-_cached_status: Optional[ACCStatus] = None
+_cached_status: Optional[WaterStatus] = None
 _last_check_time: Optional[datetime] = None
 
 
@@ -65,13 +65,13 @@ def send_email_notification(matches: list) -> bool:
 
     EMAIL_CONFIG = _email_config()
     if not EMAIL_CONFIG["enabled"]:
-        logger.debug("ACC email notifications disabled")
+        logger.debug("Water email notifications disabled")
         return False
 
     if not matches:
         return False
 
-    logger.info(f"ACC: Sending email notification to {EMAIL_CONFIG['to']}")
+    logger.info(f"Water: Sending email notification to {EMAIL_CONFIG['to']}")
 
     try:
         msg = MIMEMultipart()
@@ -80,12 +80,12 @@ def send_email_notification(matches: list) -> bool:
         _domain = EMAIL_CONFIG["from"].split("@")[-1] if "@" in EMAIL_CONFIG["from"] else None
         msg['Date'] = formatdate(localtime=True)
         msg['Message-ID'] = make_msgid(domain=_domain)
-        msg['Subject'] = f"⚠️ Water provider - possible water disconnection ({datetime.now().strftime('%d.%m.%Y')})"
+        msg['Subject'] = f"⚠️ Possible water disconnection ({datetime.now().strftime('%d.%m.%Y')})"
 
         body = f"""⚠️ A water disconnection matches a monitored address.
 
 Checked: {datetime.now().strftime('%d.%m.%Y %H:%M')}
-Address pattern: {_acc_pattern()}
+Address pattern: {_water_pattern()}
 
 {'='*50}
 FOUND:
@@ -98,7 +98,7 @@ FOUND:
         body += f"""
 {'='*50}
 Details on the provider's site:
-https://water-provider.example/disconnections
+{WATER_CONFIG['base_url']}
 
 --
 NetOps Control Plane
@@ -114,11 +114,11 @@ NetOps Control Plane
         server.sendmail(EMAIL_CONFIG["from"], EMAIL_CONFIG["to"], msg.as_string())
         server.quit()
 
-        logger.info("ACC: Email sent successfully!")
+        logger.info("Water: Email sent successfully!")
         return True
 
     except Exception as e:
-        logger.error(f"ACC: Email error: {e}")
+        logger.error(f"Water: Email error: {e}")
         return False
 
 
@@ -182,7 +182,7 @@ def mark_notified(matches: list):
         with open(NOTIFIED_FILE, 'w') as f:
             json.dump({'sigs': sigs, 'updated': datetime.now().isoformat()}, f)
     except Exception as e:
-        logger.debug(f"ACC: failed to mark notified: {e}")
+        logger.debug(f"Water: failed to mark notified: {e}")
 
 
 def invalidate():
@@ -191,23 +191,23 @@ def invalidate():
     global _cached_status, _last_check_time
     _cached_status = None
     _last_check_time = None
-    logger.info("ACC: cache invalidated (pattern changed)")
+    logger.info("Water: cache invalidated (pattern changed)")
 
 
-async def fetch_acc_page(date_str: str, tab: int = 2) -> str:
-    url = f"{ACC_CONFIG['base_url']}?date={date_str}&tab={tab}"
+async def fetch_water_page(date_str: str, tab: int = 2) -> str:
+    url = f"{WATER_CONFIG['base_url']}?date={date_str}&tab={tab}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     }
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=ACC_CONFIG['timeout'])) as response:
+            async with session.get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=WATER_CONFIG['timeout'])) as response:
                 if response.status == 200:
                     return await response.text()
                 return ""
     except Exception as e:
-        logger.warning(f"ACC fetch error: {e}")
+        logger.warning(f"Water fetch error: {e}")
         return ""
 
 
@@ -310,29 +310,33 @@ def parse_table_rows(html: str, regex) -> list:
     return matches
 
 
-async def check_acc_status(force: bool = False) -> ACCStatus:
+async def check_water_status(force: bool = False) -> WaterStatus:
     global _cached_status, _last_check_time
 
     if not force and _cached_status and _last_check_time:
         elapsed = (datetime.now() - _last_check_time).total_seconds()
-        if elapsed < ACC_CONFIG['check_interval']:
+        if elapsed < WATER_CONFIG['check_interval']:
             _cached_status.matches = filter_current_matches(_cached_status.matches)
             _cached_status.ok = len(_cached_status.matches) == 0
             return _cached_status
 
-    logger.info(f"ACC: checking for '{_acc_pattern()}'...")
+    if not WATER_CONFIG['base_url']:
+        logger.warning("Water: WATER_FEED_URL not set - skipping")
+        return WaterStatus(ok=True, last_check=datetime.now(), matches=[], error="not configured")
+
+    logger.info(f"Water: checking for '{_water_pattern()}'...")
 
     today = datetime.now().strftime("%Y-%m-%d")
-    pattern = _acc_pattern()
+    pattern = _water_pattern()
 
     try:
         regex = re.compile(pattern, re.IGNORECASE)
     except re.error as e:
         logger.error(
-            f"ACC: invalid address pattern {pattern!r}: {e}. "
-            "Fix it in the admin panel (Water outage pattern), e.g. 'Main Street\\s*,?\\s*71'."
+            f"Water: invalid address pattern {pattern!r}: {e}. "
+            "Fix it in the admin panel (Water outage pattern), e.g. 'Main\\s+Street\\s*,?\\s*1\\b'."
         )
-        status = ACCStatus(ok=True, last_check=datetime.now(), matches=[], error=f"invalid pattern: {e}")
+        status = WaterStatus(ok=True, last_check=datetime.now(), matches=[], error=f"invalid pattern: {e}")
         _cached_status = status
         _last_check_time = datetime.now()
         return status
@@ -340,13 +344,13 @@ async def check_acc_status(force: bool = False) -> ACCStatus:
     all_matches = []
 
     # Tab 1 = Planned notifications
-    content1 = await fetch_acc_page(today, tab=1)
+    content1 = await fetch_water_page(today, tab=1)
     if content1:
         matches1 = parse_notifications(content1, regex)
         all_matches.extend(matches1)
 
     # Tab 2 = Current works
-    content2 = await fetch_acc_page(today, tab=2)
+    content2 = await fetch_water_page(today, tab=2)
     if content2:
         matches2 = parse_table_rows(content2, regex)
         all_matches.extend(matches2)
@@ -361,7 +365,7 @@ async def check_acc_status(force: bool = False) -> ACCStatus:
         if new_matches and send_email_notification(new_matches):
             mark_notified(new_matches)
 
-    status = ACCStatus(
+    status = WaterStatus(
         ok=len(all_matches) == 0,
         last_check=datetime.now(),
         matches=all_matches,
@@ -380,17 +384,17 @@ async def check_acc_status(force: bool = False) -> ACCStatus:
                 "date_checked": today,
             }, f)
     except Exception as e:
-        logger.debug(f"ACC: failed to save cache: {e}")
+        logger.debug(f"Water: failed to save cache: {e}")
 
     if all_matches:
-        logger.warning(f"ACC: FOUND {len(all_matches)} matches!")
+        logger.warning(f"Water: FOUND {len(all_matches)} matches!")
     else:
-        logger.info("ACC: no disconnections found")
+        logger.info("Water: no disconnections found")
 
     return status
 
 
-def load_cached_status() -> Optional[ACCStatus]:
+def load_cached_status() -> Optional[WaterStatus]:
     global _cached_status, _last_check_time
 
     if _cached_status:
@@ -409,7 +413,7 @@ def load_cached_status() -> Optional[ACCStatus]:
                     return None
 
                 matches = filter_current_matches(data.get('matches', []))
-                _cached_status = ACCStatus(
+                _cached_status = WaterStatus(
                     ok=len(matches) == 0,
                     last_check=datetime.fromisoformat(data['last_check']) if data.get('last_check') else None,
                     matches=matches,
@@ -418,7 +422,7 @@ def load_cached_status() -> Optional[ACCStatus]:
                     _last_check_time = _cached_status.last_check
                 return _cached_status
     except Exception as e:
-        logger.debug(f"ACC: failed to load cache: {e}")
+        logger.debug(f"Water: failed to load cache: {e}")
     return None
 
 

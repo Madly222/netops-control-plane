@@ -59,7 +59,7 @@ class DemoONUMonitor(ONUMonitor):
 
 
 def _outage_status(module, matches: list[str]):
-    status = module.ElectricStatus if hasattr(module, "ElectricStatus") else module.ACCStatus
+    status = module.ElectricStatus if hasattr(module, "ElectricStatus") else module.WaterStatus
     return status(ok=not matches, last_check=datetime.now(), matches=matches)
 
 
@@ -69,7 +69,7 @@ def make_electric_check():
     async def check_electric_status(force: bool = False):
         day = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
         matches = [
-            f"[{day}] ⚡ str. Example 12 (Springfield, Centru) ⏰ 09:00-17:00\n"
+            f"[{day}] ⚡ str. Example 12 (Springfield, Centre) ⏰ 09:00-17:00\n"
             "   📍 ...planned maintenance of the 10 kV line: str. Example 2-24, str. Sample 1-9..."
         ]
         em._cached_status = _outage_status(em, matches)
@@ -79,12 +79,12 @@ def make_electric_check():
     return check_electric_status
 
 
-def make_acc_check():
-    import src.monitoring.acc_monitor as acc
+def make_water_check():
+    import src.monitoring.water_monitor as water
 
-    async def check_acc_status(force: bool = False):
-        acc._cached_status = _outage_status(acc, [])
-        acc._last_check_time = datetime.now()
-        return acc._cached_status
+    async def check_water_status(force: bool = False):
+        water._cached_status = _outage_status(water, [])
+        water._last_check_time = datetime.now()
+        return water._cached_status
 
-    return check_acc_status
+    return check_water_status

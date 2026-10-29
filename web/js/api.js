@@ -116,13 +116,13 @@ const API = {
         },
     },
 
-    // ------------------------------------------------- ACC (water) monitoring
-    acc: {
+    // ------------------------------------------------- Water monitoring
+    water: {
         status() {
-            return API.request('/acc/status');
+            return API.request('/water/status');
         },
         check() {
-            return API.request('/acc/check', { method: 'POST' });
+            return API.request('/water/check', { method: 'POST' });
         },
     },
 
@@ -244,11 +244,11 @@ const API = {
             });
         },
 
-        getAccPattern() {
-            return API.request('/admin/config/acc-pattern');
+        getWaterPattern() {
+            return API.request('/admin/config/water-pattern');
         },
-        saveAccPattern(pattern) {
-            return API.request('/admin/config/acc-pattern', {
+        saveWaterPattern(pattern) {
+            return API.request('/admin/config/water-pattern', {
                 method: 'PUT',
                 body: JSON.stringify({ pattern }),
             });
