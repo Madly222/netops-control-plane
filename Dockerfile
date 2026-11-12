@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 # snmpwalk for GPON polling, ssh for the OLT CLI; mysql-client is only needed by
 # the DHCP->NetBox MAC sync and is left out to keep the image small.
